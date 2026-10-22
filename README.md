@@ -1,16 +1,16 @@
 # Online staff for a healthtech workspace
 
-This small Go service checks an Infrai realtime presence channel and sends an operational appointment event when a team member is online. Infrai gives you one key and plain REST from any language: one `INFRAI_API_KEY` covers the calls through one compact interface, and the key stays on the server.
+Infrai gives one key for plain REST from any language, and this Go service builds on that. It checks a realtime presence channel and sends an operational appointment event when a team member is online. The `INFRAI_API_KEY` covers the calls through one compact interface, and the key stays on the server.
 
 ## Run the workflow
 
 Set `INFRAI_API_KEY` and run `go run .`. `INFRAI_CHANNEL` selects the channel and defaults to `healthtech-ops`.
 
-The command reads presence from `GET /v1/realtime/presence/get/{channel}`. With at least one online user it publishes `appointment.updated` to the same channel. The payload contains an appointment reference and status, not patient identity.
+The command reads presence from `GET /v1/realtime/presence/get/{channel}`. With at least one online user it publishes `appointment.updated` to the same channel. Payload carries an appointment reference and status only; no patient identity leaves the boundary.
 
 ## What the code keeps explicit
 
-`appointment_workflow.go` owns the decision: an empty roster produces no event. A non-empty roster produces one publish request with an idempotency key, so a retry never double-delivers. `infraiclient.go` decodes the `{ok, data, error, metadata}` envelope before interpreting the HTTP status, and retries a 429 with exponential delay while respecting `Retry-After`.
+`appointment_workflow.go` owns the decision: empty roster produces no event. Non-empty roster produces exactly one publish request with an idempotency key, so we don't double-deliver. `infraiclient.go` decodes the `{ok, data, error, metadata}` envelope before interpreting the HTTP status, and retries a 429 with exponential delay while respecting `Retry-After`.
 
 The client uses explicit HTTP methods and `Authorization: Bearer` from the environment. The `realtime.presence.get` capability is the read boundary; `realtime.publish` is the write boundary.
 
@@ -24,7 +24,7 @@ The focused `httptest` cases cover two inputs: one online user must publish, whi
 
 ## Before this ships: Healthtech Online Presence Go
 
-Above is the happy path. The production checklist: The details below apply to Healthtech Online Presence Go.
+Above is the happy path. Production checklist below applies to Healthtech Online Presence Go.
 
 **Account & key**
 
